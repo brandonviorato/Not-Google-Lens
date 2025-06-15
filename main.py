@@ -1,26 +1,70 @@
 import ollama
 import easyocr
+import cv2
+import os
 
+from prompt_loader import load_prompt
+
+# Select image
+image_path = "img/test-1.jpg"
+image = cv2.imread(image_path)
+
+# Pre-process image through binarization (make grayscale)
+def binarize(image):
+    gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    storage_path = "temp/gray.jpg"
+    cv2.imwrite(storage_path, gray_image)
+    return storage_path
+
+binarized_image_path = binarize(image)
+
+print('Extracting text from image...')
+
+# OCR binarized image
 reader = easyocr.Reader(['ja', 'en'])  # e.g., Japanese + English
-results = reader.readtext('img/test-1.jpg')
+results = reader.readtext(binarized_image_path)
 
-extractedText =''
+extracted_text = ''
 
+# Extract OCR text
 for bbox, text, confidence in results:
-    print(f"{text} (confidence: {confidence:.2f})")
-    extractedText += text
+    # print(f"{text} (confidence: {confidence:.2f})")
+    extracted_text = extracted_text + text + '\n'
 
-def translate(text):
-    prompt = f"""
-    Task: Translate text from its source language to English. The text you receive will be text that is extracted from an image using OCR. The text will contain a mix of english and the source language. It is your job to examine the text and translate it to English using any context that you can discern from the extracted English text. If there is no English text, then do your best to translate the text so that it is not a literal translation (unless appropriate).
-    Guidelines: Ensure translations maintain the meaning and context of the original text. Use proper grammar and vocabulary suitable for native English speakers. Retain the tone and style of the original text (e.g., formal, casual, professional). Handle idiomatic expressions and cultural references appropriately by translating them into equivalent English expressions where possible. If the input text is ambiguous, provide the most likely translation based on context. You must be able to understand, not only the words, but also the semantic context in which they're used. In this way, you will return a more accurate translation of the input phrase or phrases. The grammar rules, formal versus informal, and colloquialisms all need to be considered.
-    Input: {text}
-    Output: Provide the English translation only. Do not add anything else. Do not stray from this task."""
-    response = ollama.chat(model="mistral", messages=[
-        {"role": "user", "content": prompt}
-    ])
-    return response['message']['content']
+# Delete binarized image
+os.remove(binarized_image_path)
 
-translatedText = translate(extractedText)
+# Load context prompt
+context_prompt = load_prompt('context_prompt.txt')
 
-print(translatedText)
+print('Generating image context...')
+
+# Generate image context
+context_response = ollama.chat(
+    model='llama3.2-vision',
+    messages=[{
+        'role': 'user',
+        'content': context_prompt,
+        'images': [image_path]
+    }]
+)
+
+image_context = context_response['message']['content'].strip()
+
+# Load translation prompt
+context_prompt = load_prompt('translation_prompt.txt')
+
+print('Translating extracted text...')
+
+# Generate image translation
+translation_response = ollama.chat(
+    model='7shi/llama-translate:8b-q4_K_M',
+    messages=[{
+        'role': 'user',
+        'content': context_prompt + '\n' + image_context + '\n' + '### Input:' + '\n' + extracted_text + '\n' + '### Response:',
+    }]
+)
+
+image_translation = translation_response['message']['content'].strip()
+
+print(image_translation)
