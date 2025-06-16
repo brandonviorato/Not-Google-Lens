@@ -1,20 +1,14 @@
-import ollama
 import easyocr
 import cv2
 import os
 
+from image_binarizer import binarize
 from prompt_loader import load_prompt
+from translator import translate
 
 # Select image
 image_path = "img/test-1.jpg"
 image = cv2.imread(image_path)
-
-# Pre-process image through binarization (make grayscale)
-def binarize(image):
-    gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    storage_path = "temp/gray.jpg"
-    cv2.imwrite(storage_path, gray_image)
-    return storage_path
 
 binarized_image_path = binarize(image)
 
@@ -34,37 +28,9 @@ for bbox, text, confidence in results:
 # Delete binarized image
 os.remove(binarized_image_path)
 
-# Load context prompt
-context_prompt = load_prompt('context_prompt.txt')
-
-print('Generating image context...')
-
-# Generate image context
-context_response = ollama.chat(
-    model='llama3.2-vision',
-    messages=[{
-        'role': 'user',
-        'content': context_prompt,
-        'images': [image_path]
-    }]
-)
-
-image_context = context_response['message']['content'].strip()
-
-# Load translation prompt
-context_prompt = load_prompt('translation_prompt.txt')
-
 print('Translating extracted text...')
 
-# Generate image translation
-translation_response = ollama.chat(
-    model='7shi/llama-translate:8b-q4_K_M',
-    messages=[{
-        'role': 'user',
-        'content': context_prompt + '\n' + image_context + '\n' + '### Input:' + '\n' + extracted_text + '\n' + '### Response:',
-    }]
-)
-
-image_translation = translation_response['message']['content'].strip()
+translation_prompt = load_prompt('translation_prompt.txt')
+image_translation = translate(translation_prompt, extracted_text)
 
 print(image_translation)
