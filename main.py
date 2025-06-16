@@ -18,19 +18,19 @@ print('Extracting text from image...')
 reader = easyocr.Reader(['ja', 'en'])  # e.g., Japanese + English
 results = reader.readtext(binarized_image_path)
 
-extracted_text = ''
-
-# Extract OCR text
-for bbox, text, confidence in results:
-    # print(f"{text} (confidence: {confidence:.2f})")
-    extracted_text = extracted_text + text + '\n'
-
-# Delete binarized image
-os.remove(binarized_image_path)
-
 print('Translating extracted text...')
 
 translation_prompt = load_prompt('translation_prompt.txt')
-image_translation = translate(translation_prompt, extracted_text)
 
-print(image_translation)
+translated_results = []
+
+for bounding_box, text, confidence in results:
+    translated_text = translate(translation_prompt, text)
+    translated_results.append((bounding_box, translated_text, confidence))
+
+results = translated_results
+
+print(results)
+
+# Delete binarized image
+os.remove(binarized_image_path)

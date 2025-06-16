@@ -1,1 +1,1 @@
-Translate the japanese text to english
+Translate the japanese text to english. Return the translated text in the original structure and order received.
