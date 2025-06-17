@@ -5,7 +5,7 @@ import os
 
 from tkinter import filedialog
 from PIL import Image
-from main import translate_image
+from image_translator import translate_image
 
 app = customtkinter.CTk()
 app.title("Not Google Lens")
