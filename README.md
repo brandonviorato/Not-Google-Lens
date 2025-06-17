@@ -140,3 +140,5 @@ Sending each individual word greatly speeds up the response times of an LLM beca
 ## Potential future improvements
 
 As mentioned earlier the biggest future improvement that is possible for this app is with how the text is processed for translation. Once a method that has a good balance of speed and quality is figured out, the translation quality will be far superior than what it is now.
+
+Presentation (link)[https://docs.google.com/presentation/d/1nY8YbidIbbHJV5MF6GZc0imnnbX5EX8tn8kWIAEj2fM/edit?usp=sharing]
